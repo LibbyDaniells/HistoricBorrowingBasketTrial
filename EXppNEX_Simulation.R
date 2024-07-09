@@ -23,7 +23,7 @@ PowerPrior_Sim <- function(pmat,n,nh,K,q0,pw,pi,run,alpha0,a,b){
     y <- rbinom(K,n,p)
     jags.data <- list('n'=n,'K'=K,'y'=y,'pi'=pi,'nexmu'=nexmu,'nexsigma'=nexsigma,
                       'yh'=yh,'nh'=nh,'alpha0'=alpha0,'a'=a,'b'=b,'hist'=hist,'q0'=q0)
-    jags.fit <- jags.model(file='PowerPriorinNEX.txt',data=jags.data,n.adapt=1000,n.chains=4,quiet=T)
+    jags.fit <- jags.model(file='EXppNEX.txt',data=jags.data,n.adapt=1000,n.chains=4,quiet=T)
     samples <- coda.samples(jags.fit,variable.names = c('p'),n.iter=100000,silent=TRUE) #Fit the model
     powerp <- as.data.frame(samples[[1]])
     pointests[i,] <- colMeans(powerp)
