@@ -6,8 +6,6 @@ library(LaplacesDemon)
 library(parallel)
 library(MASS)
 
-
-#Calibrate Across Scenarios
 EXNEX_Sim <- function(p,n,yh,nh,K,pw,q0,run,pi){
   post.prob <- matrix(NA,nrow=run,ncol=K)
   pointests <- matrix(NA,nrow=run,ncol=K)
@@ -34,9 +32,6 @@ EXNEX_Sim <- function(p,n,yh,nh,K,pw,q0,run,pi){
   my_list <- list('Point Estimates'=pointests,'Point Estimate Means'=Pointmeans,'Point Estimate Sds'=Pointsds,'Posterior Probabilities'=post.prob)
   return(my_list)
 }
-
-
-
 
 
 K <- 5
@@ -76,7 +71,7 @@ save(exnex.sim3,file='EXNEXAllV2_Sim3.RData')
 
 
 
-
+#Analyzing Data------------------------------------------------------------------
 #Sim 0------------------------------------------------
 exnexall.sim0 <- exnex.sim0
 calmat45 <- 0
