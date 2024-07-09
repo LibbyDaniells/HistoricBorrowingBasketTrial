@@ -8,82 +8,6 @@ library(MASS)
 
 
 
-#Multi-Level Mixture Model-------------------------------------------------------
-MLMixture <- function(K,y,yh,n,nh,q0,H,pi.delta,pi.epsilon1,pi.epsilon2,a,b){
-  m <- matrix(1,nrow=K,ncol=K)
-  diag(m) <- 4
-  mod1 <- cbind(m,matrix(1,nrow=K,ncol=H),rep(3,K))
-  mod2 <- cbind(m,rep(3,K))
-  yh.new <- yh[which(nh!=0)]
-  nh.new <- nh[which(nh!=0)]
-  ycomb <- cbind(matrix(rep(c(y,yh.new),K),nrow=K,ncol=K+H,byrow=T),y,matrix(rep(y,K),nrow=K,ncol=K,byrow=T),y)
-  ncomb <- cbind(matrix(rep(c(n,nh.new),K),nrow=K,ncol=K+H,byrow=T),n,matrix(rep(n,K),nrow=K,ncol=K,byrow=T),n)
-  yhcomb <- cbind(matrix(rep(c(yh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),yh)
-  nhcomb <- cbind(matrix(rep(c(nh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),nh)
-  exnex.data <- list('pi.delta'=pi.delta,'K'=K,'H'=H,'q0'=q0,'y'=ycomb,'n'=ncomb,'pi.epsilon1'=pi.epsilon1,'pi.epsilon2'=pi.epsilon2,'mod1'=mod1,'mod2'=mod2,'a'=a,'b'=b,'yh'=yhcomb,'nh'=nhcomb)
-  jags.exnex <- jags.model(file='MultiLevelMixture.txt',data=exnex.data,n.adapt=100000,n.chains=4)
-  samples.exnex <- coda.samples(jags.exnex,variable.names=c('p.extract','Delta','epsilon.extract'),n.iter=100000,silent=T)
-  mix.ex <- as.data.frame(samples.exnex[[1]])
-  return(mix.ex)
-}
-
-
-#Calibration---------------------------------------
-MLMixture_Cal <- function(K,p,n,ph,nh,q0,pi.delta,pi.epsilon1,pi.epsilon2,a,b,run){
-  Delta.mat <- matrix(NA,nrow=run,ncol=K)
-  post.prob.fun <- function(x){
-    fun<-sum(x>q0)/100000
-    return(fun)
-  }
-  for(i in 1:run){
-    y <- rbinom(K,n,p)
-    yh <- rbinom(K,nh,ph)
-    H <- sum(ph!=0)
-    m <- matrix(1,nrow=K,ncol=K)
-    diag(m) <- 4
-    mod1 <- cbind(m,matrix(1,nrow=K,ncol=H),rep(3,K))
-    mod2 <- cbind(m,rep(3,K))
-    yh.new <- yh[which(nh!=0)]
-    nh.new <- nh[which(nh!=0)]
-    ycomb <- cbind(matrix(rep(c(y,yh.new),K),nrow=K,ncol=K+H,byrow=T),y,matrix(rep(y,K),nrow=K,ncol=K,byrow=T),y)
-    ncomb <- cbind(matrix(rep(c(n,nh.new),K),nrow=K,ncol=K+H,byrow=T),n,matrix(rep(n,K),nrow=K,ncol=K,byrow=T),n)
-    yhcomb <- cbind(matrix(rep(c(yh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),yh)
-    nhcomb <- cbind(matrix(rep(c(nh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),nh)
-    exnex.data <- list('pi.delta'=pi.delta,'K'=K,'H'=H,'q0'=q0,'y'=ycomb,'n'=ncomb,'pi.epsilon1'=pi.epsilon1,'pi.epsilon2'=pi.epsilon2,'mod1'=mod1,'mod2'=mod2,'a'=a,'b'=b,'yh'=yhcomb,'nh'=nhcomb)
-    jags.exnex <- jags.model(file='MultiLevelMixture.txt',data=exnex.data,n.adapt=1000,n.chains=4,quiet=T)
-    samples.exnex <- coda.samples(jags.exnex,variable.names=c('p.extract'),n.iter=100000,silent=T)
-    mix.ex <- as.data.frame(samples.exnex[[1]])
-    Delta.mat[i,] <- apply(mix.ex,2,post.prob.fun)
-    print(i)
-  }
-  Delta <- colQuantiles(Delta.mat,probs=0.9)
-  return(Delta)
-}
-
-
-# K <- 5
-# p <- rep(0.1,K)
-# ph <- c(0.1,0.1,0.1,0,0)
-# nh <- c(13,13,13,0,0)
-# n <- rep(34,K)
-# q0 <- 0.1
-# run <- 10000
-# pw <- 0.2
-# a <- 1
-# b <- 1
-# 
-# pi.delta <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
-# pi.epsilon1 <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
-# pi.epsilon2 <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
-# 
-# 
-# 
-# mlmixture <- MLMixture_Cal(K,p,n,ph,nh,q0,pi.delta,pi.epsilon1,pi.epsilon2,a,b,run)
-# print(mlmixture)
-# 
-# save(mlmixture.current,file='MLMixture_Delta.RData')
-
-
 #MLM Simulation--------------------------------------------------------------------
 MLMixture_Sim <- function(pmat,K,n,nh,q0,pi.delta,pi.epsilon1,pi.epsilon2,a,b,run){
   H <- sum(nh!=0)
@@ -236,7 +160,7 @@ extra.list.scenarios4 <- list(p9,p10,p11,p12)
 
 
 
-
+#Results Analysis
 #Sim 0------------------------------------------------
 calmat45 <- 0
 for(i in 1:8){
