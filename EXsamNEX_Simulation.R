@@ -35,7 +35,7 @@ SAMPrior_Sim <- function(pmat,n,nh,K,q0,pw,pi,run,clin.diff,a,b){
     }
     pi.sam <- cbind(w,1-w)
     jags.data.sam <- list('K'=K,'n'=n,'y'=y,'q0'=q0,'pi'=pi,'pi.sam'=pi.sam,'hist'=hist,'a'=a,'b'=b,'yh'=yh,'nh'=nh)
-    jags.fit.sam <- jags.model(file='SAMPriorinNEX.txt',data=jags.data.sam,n.adapt=1000,n.chains=4,quiet=T)
+    jags.fit.sam <- jags.model(file='EXsamNEX.txt',data=jags.data.sam,n.adapt=1000,n.chains=4,quiet=T)
     samples.sam <- coda.samples(jags.fit.sam,variable.names=c('p'),n.iter=100000,silent=T)
     sam <- as.data.frame(samples.sam[[1]])
     pointests[j,] <- colMeans(sam)
