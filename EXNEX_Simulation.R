@@ -6,126 +6,6 @@ library(LaplacesDemon)
 library(parallel)
 library(MASS)
 
-#EXNEX--------------------------------------------------------------------------
-EXNEX <- function(K,y,n,q0,pw,pi){
-  nexmu <- rep(log(pw/(1-pw)),K)
-  nexsigma <- rep((1/pw)+(1/(1-pw)),K)
-  exnex2.data <- list('K'=K,'n'=n,'y'=y,'q0'=q0,'nexmu'=nexmu,'nexsigma'=nexsigma,'pi'=pi)
-  jags.exnex2 <- jags.model(file='EXNEX.txt',data=exnex2.data,n.adapt=100000,n.chains=4)
-  samples.exnex2 <- coda.samples(jags.exnex2,variable.names=c('p','delta'),n.iter=100000,silent=T)
-  exnex <- as.data.frame(samples.exnex2[[1]])
-  return(exnex)
-}
-
-#Calibration---------------------------------------
-EXNEX_Cal <- function(K,p,n,q0,pw,pi,run){
-  Delta.mat <- matrix(NA,nrow=run,ncol=K)
-  nexmu <- rep(log(pw/(1-pw)),K)
-  nexsigma <- rep((1/pw)+(1/(1-pw)),K)
-  post.prob.fun <- function(x){
-    fun<-sum(x>q0)/100000
-    return(fun)
-  }
-  for(i in 1:run){
-    y <- rbinom(K,n,p)
-    exnex2.data <- list('K'=K,'n'=n,'y'=y,'q0'=q0,'nexmu'=nexmu,'nexsigma'=nexsigma,'pi'=pi)
-    jags.exnex2 <- jags.model(file='EXNEX.txt',data=exnex2.data,n.adapt=1000,n.chains=4,quiet=T)
-    samples.exnex2 <- coda.samples(jags.exnex2,variable.names=c('p'),n.iter=100000,silent=T)
-    exnex <- as.data.frame(samples.exnex2[[1]])
-    Delta.mat[i,] <- apply(exnex,2,post.prob.fun)
-    print(i)
-  }
-  Delta <- colQuantiles(Delta.mat,probs=0.9)
-  return(Delta)
-}
-
-
-# K <- 5
-# p <- rep(0.1,K)
-# n <- rep(34,K)
-# q0 <- 0.1
-# run <- 10000
-# pw <- 0.2
-# pi <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
-# 
-# exnex.current <- EXNEX_Cal(K,p,n,q0,pw,pi,run)
-# 
-# save(exnex.current,file='EXNEX_Current_Delta.RData')
-
-
-
-#Simulation-----------------------------
-# EXNEX_Sim <- function(p,n,K,q0,pw,pi,run,exnex.delta){
-#   hypo <- matrix(NA,nrow=run,ncol=K)
-#   true <- rep(0,K)
-#   pointests <- matrix(NA,nrow=run,ncol=K)
-#   nexmu <- rep(log(pw/(1-pw)),K)
-#   nexsigma <- rep((1/pw)+(1/(1-pw)),K)
-#   for(t in 1:K){
-#     if(p[t]<=q0){true[t]<-0}else{true[t]<-1}
-#   }
-#   post.prob.fun <- function(x){
-#     fun<-sum(x>q0)/100000
-#     return(fun)
-#   }
-#   for(i in 1:run){
-#     y <- rbinom(K,n,p)
-#     exnex2.data <- list('K'=K,'n'=n,'y'=y,'q0'=q0,'nexmu'=nexmu,'nexsigma'=nexsigma,'pi'=pi)
-#     jags.exnex2 <- jags.model(file='EXNEX.txt',data=exnex2.data,n.adapt=1000,n.chains=4,quiet=T)
-#     samples.exnex2 <- coda.samples(jags.exnex2,variable.names=c('p'),n.iter=100000,silent=T)
-#     exnex <- as.data.frame(samples.exnex2[[1]])
-#     pointests[i,] <- colMeans(exnex)
-#     hypo[i,] <- as.integer(apply(exnex,2,post.prob.fun)>exnex.delta)
-#     print(i)
-#   }
-#   perfect <- 0 
-#   for(j in 1:run){
-#     if(all(hypo[j,]==true)){perfect<-perfect+1}
-#   }
-#   fwer_true <- which(true==0)
-#   if(sum(true)==K){fwer <- rep('NA',K)}else{
-#     fwer <- 0
-#     for(a in 1:run){
-#       error <- rep(0,length(fwer_true))
-#       for(b in 1:length(fwer_true)){
-#         if(hypo[a,fwer_true[b]]==1){
-#           error[b] <- 1
-#         }else{error[b] <- 0}
-#       }
-#       if(sum(error)!=0){fwer <- fwer+1}
-#     }
-#     fwer <- fwer/run
-#   }
-#   Pointmeans <- colMeans(pointests)
-#   Pointsds <- apply(pointests,2,sd)
-#   my_list <- list('Hypo'=hypo,'Point Estimates'=pointests,'Point Estimate Means'=Pointmeans,'Point Estimate Sds'=Pointsds,'Error Rates'=colMeans(hypo)*100,'Perfect'=perfect/run,'FWER'=fwer)
-#   return(my_list)
-# }
-# 
-# 
-# K <- 5
-# n <- rep(34,K)
-# q0 <- 0.1
-# exnex.delta <- 0.8426812
-# run <- 10000
-# pw <- 0.2
-# pi <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
-# 
-# p1 <- c(0.1,0.1,0.1,0.1,0.1)
-# p2 <- c(0.25,0.1,0.1,0.1,0.1)
-# p3 <- c(0.25,0.25,0.1,0.1,0.1)
-# p4 <- c(0.25,0.25,0.25,0.1,0.1)
-# p5 <- c(0.25,0.25,0.25,0.25,0.1)
-# p6 <- c(0.25,0.25,0.25,0.25,0.25)
-# 
-# list.scenarios <- list(p1,p2,p3,p4,p5,p6)
-# exnex.sim <- mclapply(list.scenarios,EXNEX_Sim,n,K,q0,pw,pi,run,exnex.delta,mc.cores=7)
-# 
-# save(exnex.sim,file='EXNEX_Sim.RData')
-
-
-
-
 #Calibrate Across Scenarios
 EXNEX_Sim <- function(p,n,K,pw,q0,run,pi){
   post.prob <- matrix(NA,nrow=run,ncol=K)
@@ -188,8 +68,6 @@ save(extra.exnex.sim,file='EXNEX_Sim_Extra.RData')
 
 
 #Results Analysis---------------------------------------------------
-
-
 calmat <- 0
 for(i in 1:8){
   if(i==1|i==2|i==3|i==4|i==5|i==7|i==8){
