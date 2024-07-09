@@ -23,7 +23,7 @@ PowerPrior <- function(K,y,n,q0,pi,pw,yh,nh,alpha0,a,b){
   hist <- as.numeric(nh>0)
   jags.data <- list('n'=n,'K'=K,'y'=y,'pi'=pi,'nexmu'=nexmu,'nexsigma'=nexsigma,
                     'yh'=yh,'nh'=nh,'alpha0'=alpha0,'a'=a,'b'=b,'hist'=hist,'q0'=q0)
-  jags.fit <- jags.model(file='PowerPriorinNEX.txt',data=jags.data,n.adapt=100000,n.chains=4)
+  jags.fit <- jags.model(file='EXppNEX.txt',data=jags.data,n.adapt=100000,n.chains=4)
   samples <- coda.samples(jags.fit,variable.names = c('p','weight'),n.iter=100000,silent=TRUE) #Fit the model
   powerp <- as.data.frame(samples[[1]])
   return(powerp)
@@ -45,7 +45,7 @@ SAMPrior <- function(K,y,n,q0,yh,nh,a,b,clin.diff,pi){
   }
   pi.sam <- cbind(w,1-w)
   jags.data.sam <- list('K'=K,'n'=n,'y'=y,'q0'=q0,'pi'=pi,'pi.sam'=pi.sam,'hist'=hist,'a'=a,'b'=b,'yh'=yh,'nh'=nh)
-  jags.fit.sam <- jags.model(file='SAMPriorinNEX.txt',data=jags.data.sam,n.adapt=100000,n.chains=4)
+  jags.fit.sam <- jags.model(file='EXsamNEX.txt',data=jags.data.sam,n.adapt=100000,n.chains=4)
   samples.sam <- coda.samples(jags.fit.sam,variable.names=c('p','DeltaC','Epsilon'),n.iter=100000,silent=T)
   sam <- as.data.frame(samples.sam[[1]])
   return(sam)
@@ -184,7 +184,7 @@ MLMixture <- function(K,y,yh,n,nh,q0,H,pi.delta,pi.epsilon1,pi.epsilon2,a,b){
   yhcomb <- cbind(matrix(rep(c(yh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),yh)
   nhcomb <- cbind(matrix(rep(c(nh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),nh)
   exnex.data <- list('pi.delta'=pi.delta,'K'=K,'H'=H,'q0'=q0,'y'=ycomb,'n'=ncomb,'pi.epsilon1'=pi.epsilon1,'pi.epsilon2'=pi.epsilon2,'mod1'=mod1,'mod2'=mod2,'a'=a,'b'=b,'yh'=yhcomb,'nh'=nhcomb)
-  jags.exnex <- jags.model(file='MultiLevelMixture.txt',data=exnex.data,n.adapt=100000,n.chains=4)
+  jags.exnex <- jags.model(file='MLMixture.txt',data=exnex.data,n.adapt=100000,n.chains=4)
   samples.exnex <- coda.samples(jags.exnex,variable.names=c('p.extract','Delta','epsilon.extract'),n.iter=100000,silent=T)
   mix.ex <- as.data.frame(samples.exnex[[1]])
   return(mix.ex)
