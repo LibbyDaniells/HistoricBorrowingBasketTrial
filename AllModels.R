@@ -5,16 +5,6 @@ library(RColorBrewer)
 library(philentropy)
 library(LaplacesDemon)
 
-
-#BHM--------------------------------------------------------------------------
-BHM <- function(K,y,n,q0){
-  bhm1a.data <- list('K'=K,'n'=n,'y'=y,'q0'=q0)
-  jags.bhm1a <- jags.model(file='BHM.txt',data=bhm1a.data,n.adapt=100000,n.chains=4)
-  samples.bhm1a <- coda.samples(jags.bhm1a,variable.names=c('p'),n.iter=100000,silent=T)
-  bhm <- as.data.frame(samples.bhm1a[[1]])
-  return(bhm)
-}
-
 #EXNEX--------------------------------------------------------------------------
 EXNEX <- function(K,y,n,q0,pw,pi){
   nexmu <- rep(log(pw/(1-pw)),K)
@@ -26,7 +16,7 @@ EXNEX <- function(K,y,n,q0,pw,pi){
   return(exnex)
 }
 
-#Power prior in the NEX component--------------------------------------------------
+#EXppNEX--------------------------------------------------
 PowerPrior <- function(K,y,n,q0,pi,pw,yh,nh,alpha0,a,b){
   nexmu <- rep(log(pw/(1-pw)),K)
   nexsigma <- rep((1/pw)+(1/(1-pw)),K)
@@ -39,7 +29,7 @@ PowerPrior <- function(K,y,n,q0,pi,pw,yh,nh,alpha0,a,b){
   return(powerp)
 }
 
-#SAM Prior in the NEX component--------------------------------------------------
+#EXsamNEX--------------------------------------------------
 SAMPrior <- function(K,y,n,q0,yh,nh,a,b,clin.diff,pi){
   hist <- as.numeric(nh>0)
   w <- rep(0,K)
@@ -62,7 +52,7 @@ SAMPrior <- function(K,y,n,q0,yh,nh,a,b,clin.diff,pi){
 }
 
 
-#Adapted Power Prior/Fujikawa's Design---------------------------------------------------
+#histFujikawas---------------------------------------------------
 adapt.fujikawa <- function(y,n,yh,nh,tau,hist.scalar,epsilon){
   post <- list()
   hist <- list()
@@ -102,7 +92,7 @@ adapt.fujikawa <- function(y,n,yh,nh,tau,hist.scalar,epsilon){
 
 
 
-#mEXNEXc with Hellinger Weights--------------------------------------------------
+#mEXNEXhist--------------------------------------------------
 diff <- function(vec,n){  #Compute pairwise differences in response rates
   len <- 1:length(vec)
   diff_mat <- matrix(,nrow=length(vec),ncol=length(vec))
@@ -181,7 +171,7 @@ mEXNEXhell <- function(K,y,yh,n,nh,q0,pw,H,hist.scale,pi){
 
 
 
-#Multi-Level Mixture Model-------------------------------------------------------
+#MLMixture-------------------------------------------------------
 MLMixture <- function(K,y,yh,n,nh,q0,H,pi.delta,pi.epsilon1,pi.epsilon2,a,b){
   m <- matrix(1,nrow=K,ncol=K)
   diag(m) <- 4
@@ -222,25 +212,22 @@ pw <- 0.3
 pi.exnex <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
 pi.exnex.all <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
 
-#For Power Prior in NEX
+#For EXppNEX
 alpha0 <- 0.5
 a <- 1
 b <- 1
 
-#For Fujikawa's
+#For histFujikawa's
 tau <- 0.2
 hist.scalar <- 0.8
 epsilon <- 2
 
 
-#For Multi-Level Mixture Model
+#For MLMixture
 pi.delta <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
 pi.epsilon1 <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
 pi.epsilon2 <- rbind(c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5),c(0.5,0.5))
 
-
-bhm.time <- system.time({BHM(K,y,n,q0)})
-ee
 
 bhm.current <- BHM(K,y,n,q0)
 bhm.all <- BHM(K+H,c(y,yh[which(nh!=0)]),c(n,nh[which(nh!=0)]),q0)
@@ -253,55 +240,3 @@ mexnex <- mEXNEXhell(K,y,yh,n,nh,q0,pw,H,hist.scalar,pi.exnex)
 mmixture <- MLMixture(K,y,yh,n,nh,q0,H,pi.delta,pi.epsilon1,pi.epsilon2,a,b)
 
 
-
-
-x <- seq(0,1,0.0001)
-
-par(mfrow=c(2,2))
-plot(density(bhm.current$`p[1]`,bw=0.01),col='red',xlim=c(0,1),ylim=c(0,7),main='Basket 1')
-lines(density(bhm.all$`p[1]`,bw=0.01),col='red',lty=2)
-lines(density(exnex.current$`p[1]`,bw=0.01),col='blue')
-lines(density(exnex.all$`p[1]`,bw=0.01),col='blue',lty=2)
-lines(density(power.prior$`p[1]`,bw=0.01),col='orange')
-lines(density(samprior$`p[1]`,bw=0.01),col='aquamarine')
-lines(x,dbeta(x,fujikawa[1,1],fujikawa[1,2]),col='purple')
-lines(density(mexnex$`p[1]`,bw=0.01),col='green')
-lines(density(mmixture$`p.extract[1]`,bw=0.01),col='black',lwd=2)
-legend('topright',legend=c('BHM Current','BHM All','EXNEX Current','EXNEX All','Power Prior','SAM Prior','Fujikawa','mEXNEXc','MLMixture'),
-       col=c('red','red','blue','blue','orange','aquamarine','purple','green','black'),lty=c(1,2,1,2,1,1,1,1,1))
-
-plot(density(bhm.current$`p[2]`,bw=0.01),col='red',xlim=c(0,1),ylim=c(0,7),main='Basket 2')
-lines(density(bhm.all$`p[2]`,bw=0.01),col='red',lty=2)
-lines(density(exnex.current$`p[2]`,bw=0.01),col='blue')
-lines(density(exnex.all$`p[2]`,bw=0.01),col='blue',lty=2)
-lines(density(power.prior$`p[2]`,bw=0.01),col='orange')
-lines(density(samprior$`p[2]`,bw=0.01),col='aquamarine')
-lines(x,dbeta(x,fujikawa[2,1],fujikawa[2,2]),col='purple')
-lines(density(mexnex$`p[2]`,bw=0.01),col='green')
-lines(density(mmixture$`p.extract[2]`,bw=0.01),col='black',lwd=2)
-legend('topright',legend=c('BHM Current','BHM All','EXNEX Current','EXNEX All','Power Prior','SAM Prior','Fujikawa','mEXNEXc','MLMixture'),
-       col=c('red','red','blue','blue','orange','aquamarine','purple','green','black'),lty=c(1,2,1,2,1,1,1,1,1))
-
-plot(density(bhm.current$`p[3]`,bw=0.01),col='red',xlim=c(0,1),ylim=c(0,7),main='Basket 3')
-lines(density(bhm.all$`p[3]`,bw=0.01),col='red',lty=2)
-lines(density(exnex.current$`p[3]`,bw=0.01),col='blue')
-lines(density(exnex.all$`p[3]`,bw=0.01),col='blue',lty=2)
-lines(density(power.prior$`p[3]`,bw=0.01),col='orange')
-lines(density(samprior$`p[3]`,bw=0.01),col='aquamarine')
-lines(x,dbeta(x,fujikawa[3,1],fujikawa[3,2]),col='purple')
-lines(density(mexnex$`p[3]`,bw=0.01),col='green')
-lines(density(mmixture$`p.extract[3]`,bw=0.01),col='black',lwd=2)
-legend('topright',legend=c('BHM Current','BHM All','EXNEX Current','EXNEX All','Power Prior','SAM Prior','Fujikawa','mEXNEXc','MLMixture'),
-       col=c('red','red','blue','blue','orange','aquamarine','purple','green','black'),lty=c(1,2,1,2,1,1,1,1,1))
-
-plot(density(bhm.current$`p[4]`,bw=0.01),col='red',xlim=c(0,1),ylim=c(0,7),main='Basket 4')
-lines(density(bhm.all$`p[4]`,bw=0.01),col='red',lty=2)
-lines(density(exnex.current$`p[4]`,bw=0.01),col='blue')
-lines(density(exnex.all$`p[4]`,bw=0.01),col='blue',lty=2)
-lines(density(power.prior$`p[4]`,bw=0.01),col='orange')
-lines(density(samprior$`p[4]`,bw=0.01),col='aquamarine')
-lines(x,dbeta(x,fujikawa[4,1],fujikawa[4,2]),col='purple')
-lines(density(mexnex$`p[4]`,bw=0.01),col='green')
-lines(density(mmixture$`p.extract[4]`,bw=0.01),col='black',lwd=2)
-legend('topright',legend=c('BHM Current','BHM All','EXNEX Current','EXNEX All','Power Prior','SAM Prior','Fujikawa','mEXNEXc','MLMixture'),
-       col=c('red','red','blue','blue','orange','aquamarine','purple','green','black'),lty=c(1,2,1,2,1,1,1,1,1))
