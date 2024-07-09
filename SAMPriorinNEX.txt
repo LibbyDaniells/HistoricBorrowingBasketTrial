@@ -1,0 +1,18 @@
+model{
+ MU <- log(q0/(1-q0))
+ mu1 ~ dnorm(MU,(1/100))
+ sigma1 ~ dnorm(0,1)I(0.0001,)
+ 
+ for(k in 1:K){
+ EX[k] ~ dnorm(mu1,1/(sigma1^2))
+ Model[1,k] <- exp(EX[k])/(1+exp(EX[k]))
+ NEXPrior[1,k] ~ dbeta(a+yh[k],b+nh[k]-yh[k])
+ NEXPrior[2,k] ~ dbeta(a,b)
+ DeltaC[k] ~ dcat(pi[k,1:2])
+ Epsilon[k] ~ dcat(pi.sam[k,1:2])
+ Model[2,k] <- ifelse(hist[k]==1,NEXPrior[Epsilon[k],k],NEXPrior[2,k])
+ p[k] <- Model[DeltaC[k],k]
+ y[k] ~ dbinom(p[k],n[k])
+ }
+ 
+}

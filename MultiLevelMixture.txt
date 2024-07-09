@@ -1,0 +1,38 @@
+model{
+
+ MU <- log(q0/(1-q0))
+for(i in 1:K){
+ mu[1,i] ~ dnorm(MU,(1/100))
+ sigma[1,i] ~ dnorm(0,1)I(0.0001,)
+  mu[2,i] ~ dnorm(MU,(1/100))
+ sigma[2,i] ~ dnorm(0,1)I(0.0001,)
+}
+ 
+ for(j in 1:K){
+ Delta[j] ~ dcat(pi.delta[j,1:2])
+   for(i in 1:(K+H+1)){
+    EX1[j,i] ~ dnorm(mu[1,j],1/(sigma[1,j]^2))
+    N1[j,i] ~ dbeta(a+yh[j,i],b+nh[j,i]-yh[j,i])
+    NEX1[j,i] <- log(N1[j,i]/(1-N1[j,i]))
+    Epsilon1[j,i] ~ dcat(pi.epsilon1[i,1:2])
+    M1[j,i] <- ifelse(mod1[j,i]==1,ifelse(Epsilon1[j,i]==1,EX1[j,i],NEX1[j,i]),ifelse(mod1[j,i]==3,ifelse(Delta[j]==1,ifelse(Epsilon1[j,i]==1,EX1[j,i],NEX1[j,i]),0),0))
+    p[j,i] <- exp(M1[j,i])/(1+exp(M1[j,i]))
+  }
+ 
+  for(k in 1:(K+1)){
+    EX2[j,k] ~ dnorm(mu[2,j],1/(sigma[2,j]^2))
+    N2[j,k] ~ dbeta(1,1)
+    NEX2[j,k] <- log(N2[j,k]/(1-N2[j,k]))
+    Epsilon2[j,k] ~ dcat(pi.epsilon2[k,1:2])
+    M2[j,k] <- ifelse(mod2[j,k]==1,ifelse(Epsilon2[j,k]==1,EX2[j,k],NEX2[j,k]),ifelse(mod2[j,k]==3,ifelse(Delta[j]==2,ifelse(Epsilon2[j,k]==1,EX2[j,k],NEX2[j,k]),0),0))
+    p[j,k+K+H+1] <- exp(M2[j,k])/(1+exp(M2[j,k]))
+  }
+  for(l in 1:(2*K+H+2)){
+   y[j,l] ~ dbinom(p[j,l],n[j,l])
+  }
+  p.extract[j] <- ifelse(Delta[j]==1,p[j,K+H+1],p[j,2*K+H+2]) 
+  epsilon.extract1[j] <- ifelse(Delta[j]==1,Epsilon1[j,K+H+1],0)
+  epsilon.extract2[j] <- ifelse(Delta[j]==2,Epsilon2[j,K+1],0)
+  epsilon.extract[j] <- ifelse(Delta[j]==1,ifelse(Epsilon1[j,K+H+1]==1,1,2),ifelse(Epsilon2[j,K+1]==1,3,4))
+ }
+ }

@@ -1,0 +1,16 @@
+model{
+ MU <- log(q0/(1-q0))
+ mue ~ dnorm(MU,(1/100))
+ sigmae ~ dnorm(0,1)I(0.0001,)
+ for(k in 1:K){
+ weight[k] ~ dcat(pi[k,1:2])
+ theta1[k] ~ dnorm(mue,(1/sigmae^2))
+ theta2[k] ~ dnorm(nexmu[k],1/nexsigma[k])
+ M3[k] ~ dbeta((yh[k]*alpha0)+a,(nh[k]*alpha0)-(yh[k]*alpha0)+b)
+ M1[k] <- exp(theta1[k])/(1+exp(theta1[k]))
+ M2[k] <- exp(theta2[k])/(1+exp(theta2[k]))
+ y[k] ~ dbinom(p[k],n[k])
+ p[k] <- ifelse(weight[k]==2,ifelse(hist[k]==1,M3[k],M2[k]),M1[k])
+ }
+}
+
