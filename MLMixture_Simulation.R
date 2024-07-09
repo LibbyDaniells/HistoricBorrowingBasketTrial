@@ -32,7 +32,7 @@ MLMixture_Sim <- function(pmat,K,n,nh,q0,pi.delta,pi.epsilon1,pi.epsilon2,a,b,ru
     yhcomb <- cbind(matrix(rep(c(yh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),yh)
     nhcomb <- cbind(matrix(rep(c(nh,rep(0,H)),K),nrow=K,ncol=K+H,byrow=T),nh)
     exnex.data <- list('pi.delta'=pi.delta,'K'=K,'H'=H,'q0'=q0,'y'=ycomb,'n'=ncomb,'pi.epsilon1'=pi.epsilon1,'pi.epsilon2'=pi.epsilon2,'mod1'=mod1,'mod2'=mod2,'a'=a,'b'=b,'yh'=yhcomb,'nh'=nhcomb)
-    jags.exnex <- jags.model(file='MultiLevelMixture.txt',data=exnex.data,n.adapt=1000,n.chains=4,quiet=T)
+    jags.exnex <- jags.model(file='MLMixture.txt',data=exnex.data,n.adapt=1000,n.chains=4,quiet=T)
     samples.exnex <- coda.samples(jags.exnex,variable.names=c('p.extract'),n.iter=100000,silent=T)
     mix.ex <- as.data.frame(samples.exnex[[1]])
     post.prob[i,] <- apply(mix.ex,2,post.prob.fun)
